@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import * as compression from 'compression';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { HttpExceptionFilter } from './shared/exceptions/http-exception.filter';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -72,17 +73,31 @@ async function bootstrap() {
   // Configuración del ValidationPipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Elimina propiedades que no están en el DTO
-      forbidNonWhitelisted: true, // Lanza error si hay propiedades no permitidas
-      transform: true, // Transforma automáticamente los tipos
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: {
-        enableImplicitConversion: true, // Permite conversión implícita de tipos
+        enableImplicitConversion: true,
       },
       validationError: {
-        target: false, // No incluye el objeto target en los errores
-        value: true, // Incluye el valor inválido en los errores
+        target: false,
+        value: true,
       },
-      stopAtFirstError: true, // Falla al primer error de validación
+      stopAtFirstError: true,
+      exceptionFactory: (errors) => {
+        const firstError = errors[0];
+        const constraints = firstError.constraints || {};
+        const firstConstraint = Object.values(constraints)[0] || 'Error de validación';
+        
+        return new HttpException(
+          {
+            message: firstConstraint,
+            property: firstError.property,
+            value: firstError.value,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      },
     }),
   );
 
