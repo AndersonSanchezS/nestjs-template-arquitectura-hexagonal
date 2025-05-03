@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import * as compression from 'compression';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { HttpExceptionFilter } from './shared/exceptions/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -83,6 +84,9 @@ async function bootstrap() {
       },
     }),
   );
+
+  // Registro del filtro de excepciones global
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   await app.listen(process.env.PORT ?? 3000);
 }
