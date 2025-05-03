@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseUUIDPipe, HttpStatus } from '@nestjs/common';
 import { CreateAuthorUseCase } from '../../application/use-cases/create-author.use-case';
 import { UpdateAuthorUseCase } from '../../application/use-cases/update-author.use-case';
 import { DeleteAuthorUseCase } from '../../application/use-cases/delete-author.use-case';
@@ -19,30 +19,54 @@ export class AuthorController {
   ) {}
 
   @Post()
-  async create(@Body() authorData: CreateAuthorDto): Promise<Author> {
-    return this.createAuthorUseCase.execute(authorData);
+  async create(@Body() authorData: CreateAuthorDto) {
+    const author = await this.createAuthorUseCase.execute(authorData);
+    return {
+      error: false,
+      message: 'Author created successfully',
+      data: author,
+    };
   }
 
   @Put(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() authorData: UpdateAuthorDto,
-  ): Promise<Author> {
-    return this.updateAuthorUseCase.execute(id, authorData);
+  ) {
+    const author = await this.updateAuthorUseCase.execute(id, authorData);
+    return {
+      error: false,
+      message: 'Author updated successfully',
+      data: author,
+    };
   }
 
   @Delete(':id')
-  async delete(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
-    return this.deleteAuthorUseCase.execute(id);
+  async delete(@Param('id', ParseUUIDPipe) id: string) {
+    await this.deleteAuthorUseCase.execute(id);
+    return {
+      error: false,
+      message: 'Author deleted successfully',
+    };
   }
 
   @Get()
-  async findAll(): Promise<Author[]> {
-    return this.findAllAuthorsUseCase.execute();
+  async findAll() {
+    const authors = await this.findAllAuthorsUseCase.execute();
+    return {
+      error: false,
+      message: 'Authors retrieved successfully',
+      data: authors,
+    };
   }
 
   @Get(':id')
-  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<Author> {
-    return this.findAuthorByIdUseCase.execute(id);
+  async findById(@Param('id', ParseUUIDPipe) id: string) {
+    const author = await this.findAuthorByIdUseCase.execute(id);
+    return {
+      error: false,
+      message: 'Author retrieved successfully',
+      data: author,
+    };
   }
 } 

@@ -82,6 +82,7 @@ async function bootstrap() {
         target: false, // No incluye el objeto target en los errores
         value: true, // Incluye el valor inválido en los errores
       },
+      stopAtFirstError: true, // Falla al primer error de validación
     }),
   );
 

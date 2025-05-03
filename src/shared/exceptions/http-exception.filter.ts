@@ -4,13 +4,9 @@ import { Logger } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
 
 interface ErrorResponse {
-  statusCode: number;
-  timestamp: string;
-  path: string;
-  method: string;
+  error: boolean;
   message: string;
-  error: string | null;
-  stack?: string;
+  data?: any;
 }
 
 @Catch()
@@ -24,21 +20,21 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
-    let error: string | null = null;
+    let data: any = null;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      message = typeof exceptionResponse === 'string' 
-        ? exceptionResponse 
-        : exceptionResponse['message'];
-      error = typeof exceptionResponse === 'string' 
-        ? null 
-        : exceptionResponse['error'];
+      
+      if (typeof exceptionResponse === 'string') {
+        message = exceptionResponse;
+      } else {
+        message = exceptionResponse['message'] || exception.message;
+        data = exceptionResponse['data'];
+      }
     } else if (exception instanceof QueryFailedError) {
       status = HttpStatus.BAD_REQUEST;
       message = 'Database error occurred';
-      error = 'DatabaseError';
       this.logger.error(
         `Database error: ${exception.message}`,
         exception.stack,
@@ -52,16 +48,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     const errorResponse: ErrorResponse = {
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      method: request.method,
+      error: status >= 400,
       message,
-      error,
-      ...(process.env.NODE_ENV !== 'production' && exception instanceof Error
-        ? { stack: exception.stack }
-        : {}),
     };
+
+    if (data !== null && data !== undefined) {
+      errorResponse.data = data;
+    }
 
     response.status(status).json(errorResponse);
   }

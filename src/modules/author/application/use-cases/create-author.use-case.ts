@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { IAuthorRepository, AUTHOR_REPOSITORY } from '../../domain/repositories/author.repository';
 import { Author } from '../../domain/entities/author.entity';
 import { CreateAuthorDto } from '../dto/create-author.dto';
+import { DuplicateEntityException } from '../../../../shared/domain/exceptions/duplicate-entity.exception';
 
 @Injectable()
 export class CreateAuthorUseCase {
@@ -13,7 +14,7 @@ export class CreateAuthorUseCase {
   async execute(authorData: CreateAuthorDto): Promise<Author> {
     const existingAuthor = await this.authorRepository.findByEmail(authorData.email);
     if (existingAuthor) {
-      throw new Error('Author with this email already exists');
+      throw new DuplicateEntityException('Author', 'email', authorData.email);
     }
     return this.authorRepository.create(authorData);
   }
