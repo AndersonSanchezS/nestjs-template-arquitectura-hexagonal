@@ -2,23 +2,51 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
+import * as compression from 'compression';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Configuración de compresión
+  app.use(compression({
+    level: 6, // Nivel de compresión (0-9)
+    threshold: 1024, // Tamaño mínimo para comprimir (1KB)
+    filter: (req, res) => {
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      return compression.filter(req, res);
+    },
+  }));
+
+  // Configuración de CORS
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    credentials: true,
+    maxAge: 3600,
+  });
   
   // Configuración de Helmet
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'"],
-        fontSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        connectSrc: ["'self'", "https://*", "wss://*"],
+        fontSrc: ["'self'", "https:", "data:"],
         objectSrc: ["'none'"],
-        mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
+        mediaSrc: ["'self'", "https:", "blob:"],
+        frameSrc: ["'self'"],
+        workerSrc: ["'self'", "blob:"],
+        childSrc: ["'self'", "blob:"],
+        formAction: ["'self'"],
+        upgradeInsecureRequests: [],
       },
     },
     crossOriginEmbedderPolicy: true,
@@ -27,7 +55,11 @@ async function bootstrap() {
     dnsPrefetchControl: { allow: false },
     frameguard: { action: 'deny' },
     hidePoweredBy: true,
-    hsts: { maxAge: 31536000, includeSubDomains: true },
+    hsts: { 
+      maxAge: 31536000, 
+      includeSubDomains: true,
+      preload: true
+    },
     ieNoOpen: true,
     noSniff: true,
     originAgentCluster: true,
