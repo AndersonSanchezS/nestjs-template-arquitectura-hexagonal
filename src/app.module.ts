@@ -7,6 +7,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { MiddlewareModule } from './shared/middleware/middleware.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthorModule } from './modules/author/author.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       limit: 100, // Número máximo de peticiones en el tiempo especificado
     }]),
     MiddlewareModule,
+    AuthorModule,
   ],
   controllers: [AppController],
   providers: [
