@@ -67,6 +67,66 @@ Helmet se ha configurado para proporcionar una capa robusta de seguridad. La con
 - `referrerPolicy`: { policy: 'no-referrer' } - Controla la información de referente
 - `xssFilter`: true - Filtra ataques XSS
 
+## Validación de Datos con ValidationPipe
+
+El proyecto utiliza ValidationPipe de NestJS junto con class-validator para la validación de datos. La configuración se encuentra en `src/main.ts`:
+
+```typescript
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
+    validationError: {
+      target: false,
+      value: true,
+    },
+  }),
+);
+```
+
+### Explicación de las Directivas del ValidationPipe
+
+1. **whitelist: true**
+   - Elimina automáticamente cualquier propiedad que no esté definida en el DTO
+   - Ayuda a prevenir la inyección de datos no deseados
+   - Ejemplo: Si el DTO espera `{ name: string }` y se recibe `{ name: string, extra: any }`, se eliminará `extra`
+
+2. **forbidNonWhitelisted: true**
+   - Lanza un error cuando se reciben propiedades no definidas en el DTO
+   - Complementa a `whitelist` al hacer explícito el error
+   - Ejemplo: Si se envía `{ name: string, extra: any }` a un DTO que solo espera `name`, se lanzará un error
+
+3. **transform: true**
+   - Transforma automáticamente los tipos de datos según las definiciones del DTO
+   - Convierte strings a números, fechas, etc.
+   - Ejemplo: Si el DTO espera `age: number` y se recibe `age: "25"`, lo convertirá a `25`
+
+4. **transformOptions: { enableImplicitConversion: true }**
+   - Permite la conversión implícita de tipos
+   - Facilita el manejo de datos sin necesidad de decoradores adicionales
+   - Ejemplo: Convierte automáticamente strings a números cuando el tipo esperado es numérico
+
+5. **validationError: { target: false, value: true }**
+   - Configura el formato de los mensajes de error
+   - `target: false` - No incluye el objeto completo en el error
+   - `value: true` - Incluye el valor inválido en el mensaje de error
+   - Ejemplo de error: `"password must be longer than or equal to 8 characters"` en lugar de mostrar todo el objeto
+
+### Uso de Decoradores de Validación
+
+El proyecto utiliza class-validator para definir las reglas de validación. Algunos decoradores comunes son:
+
+- `@IsString()` - Valida que el valor sea una cadena de texto
+- `@IsEmail()` - Valida que el valor sea un email válido
+- `@IsNotEmpty()` - Valida que el valor no esté vacío
+- `@MinLength()` - Valida la longitud mínima de una cadena
+- `@MaxLength()` - Valida la longitud máxima de una cadena
+- `@Matches()` - Valida contra una expresión regular
+
 ## Iniciar el Proyecto
 
 1. Copiar el archivo `.env.example` a `.env` y configurar las variables
