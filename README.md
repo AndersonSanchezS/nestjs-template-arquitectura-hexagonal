@@ -127,6 +127,80 @@ El proyecto utiliza class-validator para definir las reglas de validación. Algu
 - `@MaxLength()` - Valida la longitud máxima de una cadena
 - `@Matches()` - Valida contra una expresión regular
 
+## Railway Oriented Programming (ROP)
+
+Railway Oriented Programming es un patrón de programación funcional que nos permite manejar el flujo de operaciones de manera más elegante y predecible. En lugar de usar excepciones o valores nulos, ROP utiliza un tipo `Result` que puede ser `Success` o `Failure`, permitiendo encadenar operaciones de manera segura.
+
+### Estructura de Archivos
+
+#### 1. `src/shared/domain/result/result.ts`
+
+Este archivo define la estructura base del patrón ROP:
+
+- `Result<T, E>`: Tipo genérico que puede ser `Success<T>` o `Failure<E>`
+- `Success<T>`: Clase que representa un resultado exitoso
+- `Failure<E>`: Clase que representa un resultado fallido
+- `success<T>(value: T)`: Función helper para crear un resultado exitoso
+- `failure<E>(error: E)`: Función helper para crear un resultado fallido
+
+#### 2. `src/shared/domain/result/result.utils.ts`
+
+Contiene funciones utilitarias para trabajar con `Result`:
+
+- `map<T, U, E>(result: Result<T, E>, fn: (value: T) => U)`: Transforma el valor de un resultado exitoso
+- `flatMap<T, U, E>(result: Result<T, E>, fn: (value: T) => Result<U, E>)`: Encadena operaciones que devuelven Result
+- `getOrElse<T, E>(result: Result<T, E>, defaultValue: T)`: Obtiene el valor o un valor por defecto
+- `getOrThrow<T, E>(result: Result<T, E>)`: Obtiene el valor o lanza el error
+- `fold<T, U, E>(result: Result<T, E>, onSuccess: (value: T) => U, onFailure: (error: E) => U)`: Maneja ambos casos (éxito/fallo)
+
+#### 3. `src/shared/domain/errors/domain.error.ts`
+
+Define una jerarquía de errores de dominio:
+
+- `DomainError`: Clase base para todos los errores de dominio
+- `ValidationError`: Para errores de validación
+- `NotFoundError`: Para recursos no encontrados
+- `ConflictError`: Para conflictos (ej: duplicados)
+
+### Ejemplo de Uso
+
+```typescript
+// Ejemplo de una operación que puede fallar
+const validateEmail = (email: string): Result<string, ValidationError> => {
+  if (!email.includes('@')) {
+    return failure(new ValidationError('Email inválido'));
+  }
+  return success(email);
+};
+
+// Encadenamiento de operaciones
+const result = validateEmail('user@example.com')
+  .flatMap(email => createUser(email))
+  .map(user => sendWelcomeEmail(user));
+
+// Manejo del resultado
+fold(
+  result,
+  user => console.log('Usuario creado:', user),
+  error => console.error('Error:', error.message)
+);
+```
+
+### Beneficios de ROP
+
+1. **Manejo explícito de errores**: Los errores son parte del tipo de retorno, no excepciones ocultas
+2. **Composición de funciones**: Las operaciones se pueden encadenar de manera segura
+3. **Tipado fuerte**: TypeScript nos ayuda a manejar todos los casos posibles
+4. **Código más predecible**: El flujo de la aplicación es más fácil de seguir
+5. **Mantenibilidad**: Las funciones son más pequeñas y enfocadas en una sola responsabilidad
+
+### Patrones Comunes
+
+1. **Railway Pattern**: Encadenar operaciones que pueden fallar
+2. **Error Handling**: Manejar errores de manera funcional
+3. **Data Transformation**: Transformar datos de manera segura
+4. **Validation**: Validar datos antes de procesarlos
+
 ## Iniciar el Proyecto
 
 1. Copiar el archivo `.env.example` a `.env` y configurar las variables
