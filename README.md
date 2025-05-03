@@ -1,98 +1,78 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend Template
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Configuración de Base de Datos
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+### Conexión a PostgreSQL con TypeORM
 
-## Description
+El proyecto utiliza TypeORM para la conexión con PostgreSQL. La configuración se encuentra en `src/config/database.config.ts`:
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ pnpm install
+```typescript
+export const databaseConfig: TypeOrmModuleOptions = {
+  type: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
+  username: process.env.DB_USERNAME || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_DATABASE || 'nestjs_db',
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  synchronize: process.env.NODE_ENV !== 'production',
+  logging: process.env.NODE_ENV !== 'production',
+  retryAttempts: 10,
+  retryDelay: 3000,
+  autoLoadEntities: true,
+};
 ```
 
-## Compile and run the project
+#### Variables de Entorno Requeridas
+- `DB_HOST`: Host de la base de datos (por defecto: localhost)
+- `DB_PORT`: Puerto de la base de datos (por defecto: 5432)
+- `DB_USERNAME`: Usuario de la base de datos (por defecto: postgres)
+- `DB_PASSWORD`: Contraseña de la base de datos (por defecto: postgres)
+- `DB_DATABASE`: Nombre de la base de datos (por defecto: nestjs_db)
 
+#### Configuración Docker
+La base de datos se ejecuta en un contenedor Docker con la siguiente configuración:
+- Imagen: postgres:16-alpine
+- Volumen persistente para los datos
+- Healthcheck para verificar la disponibilidad
+- Configuración de conexiones máximas
+
+## Configuración de Seguridad con Helmet
+
+Helmet se ha configurado para proporcionar una capa robusta de seguridad. La configuración se encuentra en `src/main.ts`:
+
+### Directivas de Content Security Policy (CSP)
+- `defaultSrc`: ["'self'"] - Solo permite cargar recursos del mismo origen
+- `scriptSrc`: ["'self'"] - Restringe la ejecución de scripts al mismo origen
+- `styleSrc`: ["'self'"] - Restringe los estilos CSS al mismo origen
+- `imgSrc`: ["'self'", 'data:', 'https:'] - Permite imágenes del mismo origen, data URIs y HTTPS
+- `connectSrc`: ["'self'"] - Restringe las conexiones (AJAX, WebSocket) al mismo origen
+- `fontSrc`: ["'self'"] - Restringe las fuentes al mismo origen
+- `objectSrc`: ["'none'"] - Bloquea plugins como Flash
+- `mediaSrc`: ["'self'"] - Restringe los recursos multimedia al mismo origen
+- `frameSrc`: ["'none'"] - Bloquea iframes
+
+### Otras Políticas de Seguridad
+- `crossOriginEmbedderPolicy`: true - Controla cómo se cargan los recursos de otros orígenes
+- `crossOriginOpenerPolicy`: true - Controla cómo se abren ventanas emergentes
+- `crossOriginResourcePolicy`: { policy: "same-site" } - Restringe recursos a mismo sitio
+- `dnsPrefetchControl`: { allow: false } - Desactiva la precarga de DNS
+- `frameguard`: { action: 'deny' } - Previene ataques de clickjacking
+- `hidePoweredBy`: true - Oculta el encabezado X-Powered-By
+- `hsts`: { maxAge: 31536000, includeSubDomains: true } - Fuerza HTTPS por un año
+- `ieNoOpen`: true - Previene descargas automáticas en IE
+- `noSniff`: true - Previene MIME type sniffing
+- `originAgentCluster`: true - Mejora el aislamiento de origen
+- `permittedCrossDomainPolicies`: { permittedPolicies: 'none' } - Bloquea políticas cross-domain
+- `referrerPolicy`: { policy: 'no-referrer' } - Controla la información de referente
+- `xssFilter`: true - Filtra ataques XSS
+
+## Iniciar el Proyecto
+
+1. Copiar el archivo `.env.example` a `.env` y configurar las variables
+2. Ejecutar los contenedores:
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+docker-compose up --build
 ```
 
-## Run tests
-
-```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+La aplicación estará disponible en `http://localhost:3000`
